@@ -5,7 +5,7 @@ import numpy as np
 from sklearn import preprocessing
 from screeninfo import get_monitors
 import paramiko #импорт модуля для ssh соедиения
-#import re
+import os
 
 dest_ip="10.10.4.167"
 usernm="gluhov"
@@ -18,14 +18,15 @@ path='/home/gluhov/TEMP_DATA/STREAM'
 
 ssh.connect(dest_ip,username=usernm,password=paswd)  #соединение по ssh
 
-command="ls"+" "+path
+command = "ls"+" "+path
 stdin, stdout, stderr = ssh.exec_command(command) #выполнение команд терминала. Получаем список директорий по указанному адресу.
 result=stdout.read().split() #Считываем список со стандартного вывода, получаем строку байтов.
 
 print(list(result))
-file_list=[] #Здесь будет список файлов  директории сервера /home/gluhov/TEMP_DATA/STREAM
+file_list = [] #Здесь будет список файлов  директории сервера /home/gluhov/TEMP_DATA/STREAM
 for every in list(result):
-    every=every.decode('utf-8') #Переводим байт в стринг
+    every = every.decode('utf-8') #Переводим байт в стринг
+    every = os.path.join(path, every)
     file_list.append(every) #Складиваем имена файлов в список
 print(file_list)
 
