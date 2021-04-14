@@ -11,6 +11,10 @@ dest_ip="10.10.4.167"
 usernm="gluhov"
 paswd="iwt"
 
+pause=5
+plt.ion()
+plt.style.use('ggplot')
+
 ssh=paramiko.SSHClient() #создание класса SSHClient.
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy()) #добавление ключа безопасносности не задавая лишних вопросов
 
@@ -22,14 +26,21 @@ command = "ls"+" "+path
 stdin, stdout, stderr = ssh.exec_command(command) #выполнение команд терминала. Получаем список директорий по указанному адресу.
 result=stdout.read().split() #Считываем список со стандартного вывода, получаем строку байтов.
 
-print(list(result))
+#print(list(result))
 file_list = [] #Здесь будет список файлов  директории сервера /home/gluhov/TEMP_DATA/STREAM
 for every in list(result):
     every = every.decode('utf-8') #Переводим байт в стринг
-    every = os.path.join(path, every)
-    file_list.append(every) #Складиваем имена файлов в список
-print(file_list)
-
+    every = os.path.join(path, every) # Создаем полный путь до каждого файла в удаленной директории.
+    file_list.append(every) #Складываем имена файлов в список
+print(file_list) # лист из файлов которые будем получать
+ssh = ssh.open_sftp()
+remote_file = ssh.open(file_list[1])
+#print(remote_file)
+try:
+    dfP=pd.read_csv(remote_file, usecols=['HAE','HAN'])
+    print('Файл для длины скачивается')
+finally:
+    remote_file.close()
 
 #for m in get_monitors():
 #    print(str(m))
@@ -46,13 +57,8 @@ for every in mon:
 
 #print(wght)
 #print(hght)
-pause=20
-plt.ion()
-plt.style.use('ggplot')
 #col=plt.cm.jet([0,1])
-#dfP=pd.read_csv('/home/gluk/MIR_TILT_VIZ/PETT/PETT_week.csv', usecols=['HAE','HAN'])
-#!!!! Продолжать с этого места надо файлы скачать
-#dfP=pd.read_csv(os.path.join(file_list[0], usecols=['HAE','HAN'])
+
 ln=dfP['HAE'].size
 print(ln)
 ncol=ln
@@ -63,21 +69,40 @@ fig1,(ax1) =plt.subplots(1,1,sharex='all', sharey='row',figsize=(0.65*1920/2.45/
 fig2,(ax2) =plt.subplots(1,1,sharex='all', sharey='row',figsize=(0.65*1920/2.45/my_dpi, 1080/2.45/my_dpi), dpi=my_dpi)
 fig3,(ax3) =plt.subplots(1,1,sharex='all', sharey='row',figsize=(0.65*1920/2.45/my_dpi, 1080/2.45/my_dpi), dpi=my_dpi)
 #plt.gca().set_aspect('equal', adjustable='box')
-
 #
+def get_remote_files(file_list):
+    for every in file_list:
+  #      ssh = ssh.open_sftp()
+        remote_file = ssh.open(every)
+        print(every)
+        try:
+             if 'IVST' in every :
+                dfI = pd.read_csv(remote_file)
+ #               print(every)
+ #               print(dfI)
+             elif 'KLYT' in every:
+  #              print(every)
+                dfK = pd.read_csv(remote_file)
+   #             print(dfK)
+             elif 'IVS1' in every:
+   #             print(every)
+                dfI1 = pd.read_csv(remote_file)
+    #            print(dfI1)
+#            print(dfP)
+        finally:
+            remote_file.close()
+    return(dfI,dfK,dfI1)
 
-# while True:
+while True:
+     dfI,dfK,dfI1 = get_remote_files(file_list)
 
-#     dfP=pd.read_csv('/home/gluk/MIR_TILT_VIZ/PETT/PETT_week.csv')
-#     dfP['HAEP']=dfP['HAE']
-#     dfP['HANP']=dfP['HAN']
-#     dfI=pd.read_csv('/home/gluk/MIR_TILT_VIZ/IVST/IVST_week.csv')
-#     dfI['HAEI']=dfI['HAE']#*(-1)
-#     dfI['HANI']=dfI['HAN']#*(-1)
-#     dfPR=pd.read_csv('/home/gluk/MIR_TILT_VIZ/PETR/PETR_week.csv')
-#     dfPR['HAEPR']=dfPR['HAE']
-#     dfPR['HANPR']=dfPR['HAN']
+     ax1.scatter(dfI['HAE'],dfI['HAN'], s=1, marker='.', c=colors)
+     ax2.scatter(dfK['HAE'],dfK['HAN'], s=1, marker='.', c=colors)
+     #ax3.scatter(dfI1['HAE'],dfI1['HAN'], s=1, marker='.', c=colors)
 
+ 
+     plt.pause(pause)
+        
 # # Нормализация по всем каналам пока не используем
 # #    df=pd.concat([dfP['HAEP'],dfP['HANP'],dfI['HAEI'],dfI['HANI'], dfPR['HAEPR'], dfPR['HANPR']],axis=1)
 # #    df_norm=(df - df.mean()) / (df.max() - df.min()) #Нормализация четырех каналов
@@ -86,6 +111,4 @@ fig3,(ax3) =plt.subplots(1,1,sharex='all', sharey='row',figsize=(0.65*1920/2.45/
 #     ax1.scatter(dfP['HAEP'],dfP['HANP'], s=1, marker='.', c=colors)
 #     ax2.scatter(dfI['HAEI'],dfI['HANI'], s=1, marker='.', c=colors)
 #     ax3.scatter(dfPR['HAEPR'],dfPR['HANPR'], s=1, marker='.', c=colors)
-
-
-#     plt.pause(pause)
+    
